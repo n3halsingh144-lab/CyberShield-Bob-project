@@ -1,0 +1,563 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CyberShield SOC — Project Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #1f2328;
+    background: #ffffff;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 32px 64px;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    border: 2px solid #3b82d4;
+    border-radius: 10px;
+    padding: 40px 36px;
+    margin-bottom: 48px;
+    background: #f7f8fa;
+    text-align: center;
+  }
+  .cover .shield { font-size: 3rem; margin-bottom: 8px; }
+  .cover h1 { font-size: 1.9rem; color: #3b82d4; letter-spacing: .02em; margin-bottom: 6px; }
+  .cover .subtitle { font-size: 1rem; color: #57606a; margin-bottom: 24px; }
+  .cover-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; text-align: left; margin-top: 20px; }
+  .cover-grid dt { color: #57606a; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; }
+  .cover-grid dd { font-weight: 600; color: #1f2328; font-size: .92rem; margin-bottom: 4px; }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 1.15rem;
+    color: #3b82d4;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 5px;
+    margin: 36px 0 14px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  h3 { font-size: 1rem; color: #1f2328; margin: 20px 0 8px; font-weight: 700; }
+
+  /* ── Body text ── */
+  p { margin-bottom: 10px; color: #1f2328; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: .87rem; }
+  th { background: #f7f8fa; color: #57606a; text-transform: uppercase; font-size: .78rem;
+       letter-spacing: .05em; padding: 8px 10px; border: 1px solid #e5e7eb; text-align: left; }
+  td { padding: 8px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f8fa; }
+
+  /* ── Code ── */
+  code {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: .85em;
+    color: #7c5cd8;
+  }
+  pre {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-size: .83rem;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    color: #1f2328;
+    line-height: 1.6;
+  }
+
+  /* ── Badge chips ── */
+  .chip {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: .78rem;
+    font-weight: 600;
+    margin: 2px 3px 2px 0;
+  }
+  .chip-blue   { background:#dbeafe; color:#1d4ed8; }
+  .chip-green  { background:#dcfce7; color:#166534; }
+  .chip-yellow { background:#fef9c3; color:#854d0e; }
+  .chip-red    { background:#fee2e2; color:#991b1b; }
+  .chip-purple { background:#ede9fe; color:#5b21b6; }
+  .chip-gray   { background:#f3f4f6; color:#374151; }
+
+  /* ── Architecture diagram (pure CSS) ── */
+  .arch {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 16px 0;
+  }
+  .arch-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: .82rem;
+    background: #f7f8fa;
+    text-align: center;
+    min-width: 120px;
+  }
+  .arch-box.primary { background: #dbeafe; border-color: #93c5fd; color: #1e40af; font-weight: 600; }
+  .arch-box.accent  { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+  .arch-arrow { text-align: center; color: #57606a; font-size: .85rem; }
+
+  /* ── Severity table colours ── */
+  .sev-low      { color: #166534; font-weight: 700; }
+  .sev-medium   { color: #854d0e; font-weight: 700; }
+  .sev-high     { color: #9a3412; font-weight: 700; }
+  .sev-critical { color: #991b1b; font-weight: 700; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 56px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: .78rem;
+    color: #57606a;
+  }
+
+  /* ── Page-break hints ── */
+  @media print {
+    h2 { page-break-before: always; }
+    .cover { page-break-after: always; }
+    .no-break { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  
+  <div class="cover">
+    <div class="shield">🛡️</div>
+    <h1>CyberShield SOC</h1>
+    <div class="subtitle">Security Operations Center Dashboard — Project Report</div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0" />
+    <dl class="cover-grid">
+      <dt>Project Title</dt>
+      <dd>CyberShield SOC Dashboard</dd>
+      <dt>Technology Stack</dt>
+      <dd>Python 3.10+ · Streamlit · Pandas</dd>
+      <dt>Project Type</dt>
+      <dd>Cybersecurity Web Application</dd>
+      <dt>Domain</dt>
+      <dd>Security Operations &amp; Monitoring</dd>
+      <dt>Deployment</dt>
+      <dd>Localhost (Streamlit server)</dd>
+      <dt>Data</dt>
+      <dd>Simulated / Synthetic (no real data)</dd>
+      <dt>Source File</dt>
+      <dd><code>app.py</code> — 544 lines</dd>
+      <dt>Report Date</dt>
+      <dd>2025</dd>
+    </dl>
+  </div>
+
+  
+  <h2>1. Abstract</h2>
+  <p>
+    CyberShield SOC is a browser-based Security Operations Center dashboard developed entirely in
+    Python using the Streamlit framework. The application simulates a real-world SOC environment,
+    providing analysts with a centralized interface to monitor, triage, and manage security alerts
+    and incidents in real time. All data displayed by the application is synthetically generated
+    in-memory using Python's standard library; no live network traffic, external APIs, or databases
+    are used.
+  </p>
+  <p>
+    The project demonstrates practical knowledge of cybersecurity workflows including alert triage,
+    incident response lifecycle management, chain-of-custody documentation, and evidence logging —
+    all rendered through an interactive, dark-themed web interface that auto-refreshes every five
+    seconds to simulate a live threat feed.
+  </p>
+
+  
+  <h2>2. Introduction</h2>
+  <h3>2.1 Background</h3>
+  <p>
+    A Security Operations Center (SOC) is the nerve center of an organization's cybersecurity
+    posture. SOC analysts monitor security events generated by SIEM (Security Information and Event
+    Management) platforms, triage alerts, escalate genuine threats into incidents, and track those
+    incidents through to resolution. Effective SOC tooling must surface the right information at
+    the right time, support analyst workflows, and maintain an auditable record of every action taken.
+  </p>
+  <h3>2.2 Problem Statement</h3>
+  <p>
+    Students and aspiring security analysts often lack access to realistic SOC tooling for learning
+    purposes. Commercial SIEM products are expensive and complex to configure. This project addresses
+    that gap by providing a fully self-contained, zero-infrastructure SOC dashboard that can be run
+    locally with two <code>pip install</code> commands.
+  </p>
+  <h3>2.3 Objectives</h3>
+  <ul>
+    <li>Simulate a live alert feed with realistic threat categories and severity levels.</li>
+    <li>Provide KPI summary cards, interactive charts, and a filterable alert table.</li>
+    <li>Implement a complete incident response workflow from alert triage to resolution.</li>
+    <li>Maintain a chain-of-custody audit trail for every incident.</li>
+    <li>Allow report export in plain-text format for submission or archiving.</li>
+    <li>Deliver all functionality in a single Python file without external services.</li>
+  </ul>
+
+  
+  <h2>3. Technology Stack</h2>
+  <table>
+    <thead>
+      <tr><th>Component</th><th>Technology</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Language</strong></td>
+        <td><span class="chip chip-blue">Python 3.10+</span></td>
+        <td>Core application logic, data generation, state management</td>
+      </tr>
+      <tr>
+        <td><strong>Web Framework</strong></td>
+        <td><span class="chip chip-purple">Streamlit 1.x</span></td>
+        <td>UI rendering, session state, auto-rerun, browser delivery</td>
+      </tr>
+      <tr>
+        <td><strong>Data Manipulation</strong></td>
+        <td><span class="chip chip-green">Pandas</span></td>
+        <td>DataFrame construction, filtering, groupby aggregations</td>
+      </tr>
+      <tr>
+        <td><strong>Standard Library</strong></td>
+        <td><code>random, time, datetime, uuid</code></td>
+        <td>Fake data generation, timestamping, unique ID creation</td>
+      </tr>
+      <tr>
+        <td><strong>Styling</strong></td>
+        <td>Injected CSS via <code>st.markdown</code></td>
+        <td>Dark theme, severity badges, card layouts, priority colours</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Why Streamlit?</h3>
+  <p>
+    Streamlit converts Python scripts into interactive web applications without requiring HTML,
+    JavaScript, or a separate frontend framework. Its reactive execution model — where the entire
+    script reruns on every user interaction — pairs naturally with the <code>st.session_state</code>
+    persistence layer used here to maintain the in-memory alert and incident stores between reruns.
+    The built-in <code>st.rerun()</code> call enables timed auto-refresh to simulate live data.
+  </p>
+
+  
+  <h2>4. System Architecture</h2>
+  <p>
+    The application follows a single-file, function-per-concern architecture with Streamlit's
+    session state acting as the in-memory data store.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-box primary">Browser (User)</div>
+    </div>
+    <div class="arch-arrow">▲ ▼ HTTP (localhost:8501)</div>
+    <div class="arch-row">
+      <div class="arch-box primary">Streamlit Server</div>
+    </div>
+    <div class="arch-arrow">▲ ▼ Python reruns on every interaction / timer</div>
+    <div class="arch-row">
+      <div class="arch-box accent">main()</div>
+    </div>
+    <div class="arch-arrow">calls</div>
+    <div class="arch-row">
+      <div class="arch-box">_init_state()</div>
+      <div class="arch-box">_maybe_add_alerts()</div>
+      <div class="arch-box">render_sidebar()</div>
+    </div>
+    <div class="arch-arrow">routes to</div>
+    <div class="arch-row">
+      <div class="arch-box">render_dashboard()</div>
+      <div class="arch-box">render_incidents()</div>
+    </div>
+    <div class="arch-arrow">reads / writes</div>
+    <div class="arch-row">
+      <div class="arch-box primary">st.session_state<br /><small>(alerts list · incidents list)</small></div>
+    </div>
+  </div>
+
+  <h3>4.1 Data Flow</h3>
+  <ol>
+    <li><strong>Initialization:</strong> <code>_init_state()</code> seeds 40 historical alerts and 5 incident tickets into <code>st.session_state</code> on the very first run.</li>
+    <li><strong>Live Feed:</strong> <code>_maybe_add_alerts()</code> checks elapsed time; if ≥ 5 s, inserts 1–3 new alerts at the front of the list (max 200 kept).</li>
+    <li><strong>Rendering:</strong> The active page function reads from session state, applies sidebar filters, and renders charts, tables, and action widgets.</li>
+    <li><strong>Mutation:</strong> Action buttons (Acknowledge, Escalate, etc.) write back to session state, which persists across reruns.</li>
+    <li><strong>Auto-refresh:</strong> <code>st.rerun()</code> at the end of <code>main()</code> re-executes the script every ~5 seconds.</li>
+  </ol>
+
+  
+  <h2>5. Features &amp; Implementation</h2>
+
+  <h3>5.1 Dark Theme</h3>
+  <p>
+    A GitHub-inspired dark palette is applied by injecting a <code>&lt;style&gt;</code> block via
+    <code>st.markdown(..., unsafe_allow_html=True)</code>. Key colours: background <code>#0d1117</code>,
+    surface <code>#161b22</code>, border <code>#30363d</code>, text <code>#c9d1d9</code>.
+    Streamlit's own data-testid selectors are overridden to ensure complete theme coverage including
+    the sidebar and data frames.
+  </p>
+
+  <h3>5.2 Live Clock</h3>
+  <p>
+    The top bar renders <code>datetime.datetime.now().strftime(...)</code> on every rerun cycle,
+    producing a clock that updates every 5 seconds alongside the alert feed.
+  </p>
+
+  <h3>5.3 Summary KPI Cards</h3>
+  <p>Four metric cards are rendered using custom HTML/CSS in a 4-column Streamlit layout:</p>
+  <table>
+    <thead><tr><th>Card</th><th>Colour</th><th>Calculation</th></tr></thead>
+    <tbody>
+      <tr><td>Total Alerts</td><td style="color:#3b82d4">■ Blue</td><td><code>len(alerts)</code></td></tr>
+      <tr><td>Critical Alerts</td><td style="color:#dc2626">■ Red</td><td><code>Severity == "Critical"</code></td></tr>
+      <tr><td>Open Incidents</td><td style="color:#ea580c">■ Orange</td><td><code>Status in (New, Acknowledged, Escalated)</code></td></tr>
+      <tr><td>Resolved / Closed</td><td style="color:#16a34a">■ Green</td><td><code>Status in (False Positive, Closed)</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.4 Alert Generation</h3>
+  <p>
+    Each alert is a Python dictionary with six fields. Severity is weighted to reflect realistic
+    distribution (Low 30%, Medium 40%, High 20%, Critical 10%). Source IPs are drawn from a pool of
+    70 pre-generated addresses spanning RFC 1918 private ranges and public space.
+  </p>
+  <table>
+    <thead><tr><th>Field</th><th>Values</th></tr></thead>
+    <tbody>
+      <tr><td><strong>ID</strong></td><td><code>ALT-XXXXXX</code> (UUID hex prefix)</td></tr>
+      <tr><td><strong>Timestamp</strong></td><td>Current time minus random offset</td></tr>
+      <tr><td><strong>Source IP</strong></td><td>Random from pool of 70 IPs</td></tr>
+      <tr><td><strong>Type</strong></td><td>Phishing · Brute Force · Malware · SQL Injection · DDoS</td></tr>
+      <tr><td><strong>Severity</strong></td><td><span class="sev-low">Low</span> · <span class="sev-medium">Medium</span> · <span class="sev-high">High</span> · <span class="sev-critical">Critical</span></td></tr>
+      <tr><td><strong>Status</strong></td><td>New · Acknowledged · Escalated · False Positive · Closed</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.5 Sidebar Filters &amp; Search</h3>
+  <p>
+    The sidebar exposes three <code>st.multiselect</code> widgets (Severity, Type, Status) and a
+    free-text <code>st.text_input</code> for IP or Alert ID search. Filters are applied using Pandas
+    boolean masks on the DataFrame derived from the session-state alert list. All filters are
+    additive (AND logic); the search performs case-insensitive substring matching.
+  </p>
+
+  <h3>5.6 Charts</h3>
+  <table>
+    <thead><tr><th>Chart</th><th>Type</th><th>Data Source</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Alerts Over Time</td>
+        <td>Line chart (<code>st.line_chart</code>)</td>
+        <td>Filtered alerts grouped by hour using <code>dt.floor("h")</code></td>
+      </tr>
+      <tr>
+        <td>Alerts by Type</td>
+        <td>Bar chart (<code>st.bar_chart</code>)</td>
+        <td><code>value_counts()</code> on the Type column</td>
+      </tr>
+      <tr>
+        <td>Severity Distribution</td>
+        <td>Bar chart + legend</td>
+        <td><code>value_counts().reindex(SEVERITIES)</code> with colour badges</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>All charts re-render on every rerun cycle, picking up newly generated alerts automatically.</p>
+
+  <h3>5.7 Alert Actions</h3>
+  <p>
+    A <code>st.selectbox</code> lets the analyst pick any alert visible in the filtered table.
+    Four action buttons mutate that alert's Status field in session state:
+  </p>
+  <ul>
+    <li><strong>Acknowledge</strong> — sets Status to <em>Acknowledged</em>; confirms receipt of alert.</li>
+    <li><strong>Escalate</strong> — sets Status to <em>Escalated</em>; flags for senior analyst review.</li>
+    <li><strong>Mark False Positive</strong> — sets Status to <em>False Positive</em>; closes without action.</li>
+    <li><strong>Create Incident</strong> — auto-creates an Incident ticket mapped to the alert's severity (P1–P4), assigns a random analyst, and escalates the source alert.</li>
+  </ul>
+
+  <h3>5.8 Incident Management</h3>
+  <p>
+    The Incidents page provides a full ITSM-style ticket workflow. Each incident carries:
+    ID, Title, Priority (P1–P4), Assignee, Status, Created timestamp, Notes, Evidence list, and
+    Chain-of-Custody log.
+  </p>
+  <p><strong>Status Workflow:</strong></p>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 12px">
+    <span class="chip chip-blue">Open</span>
+    <span style="color:#57606a">→</span>
+    <span class="chip chip-yellow">Investigating</span>
+    <span style="color:#57606a">→</span>
+    <span class="chip chip-red">Contained</span>
+    <span style="color:#57606a">→</span>
+    <span class="chip chip-green">Resolved</span>
+  </div>
+  <p>
+    Every status transition, note save, and evidence addition appends a timestamped, actor-labelled
+    entry to the incident's immutable Chain-of-Custody log — mirroring real forensic chain-of-custody
+    requirements.
+  </p>
+
+  <h3>5.9 Report Export</h3>
+  <p>
+    <code>st.download_button</code> streams a formatted plain-text report directly to the browser for
+    download. The report contains all incident metadata, notes, evidence filenames, and the complete
+    chain-of-custody timeline — suitable for submission or archiving.
+  </p>
+
+  
+  <h2>6. Code Module Breakdown</h2>
+  <table>
+    <thead><tr><th>Function</th><th>Lines</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td><code>_init_state()</code></td><td>~12</td><td>One-time session state seeding</td></tr>
+      <tr><td><code>_new_alert()</code></td><td>~12</td><td>Generate a single random alert dict</td></tr>
+      <tr><td><code>_generate_alerts(n)</code></td><td>~3</td><td>Bulk seed historical alerts</td></tr>
+      <tr><td><code>_generate_incidents(n)</code></td><td>~25</td><td>Create fake incident tickets with evidence &amp; chain</td></tr>
+      <tr><td><code>_maybe_add_alerts()</code></td><td>~8</td><td>Timer-based live alert injection</td></tr>
+      <tr><td><code>_badge(sev)</code></td><td>~3</td><td>Return HTML severity badge string</td></tr>
+      <tr><td><code>render_sidebar()</code></td><td>~22</td><td>Navigation, filters, search input</td></tr>
+      <tr><td><code>render_dashboard()</code></td><td>~110</td><td>KPI cards, charts, alert table, action buttons</td></tr>
+      <tr><td><code>render_incidents()</code></td><td>~130</td><td>Incident table, detail panel, workflow, download</td></tr>
+      <tr><td><code>main()</code></td><td>~15</td><td>Orchestration and auto-rerun loop</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>7. Cybersecurity Concepts Demonstrated</h2>
+  <table>
+    <thead><tr><th>Concept</th><th>Implementation in Project</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Alert Triage</strong></td>
+        <td>Severity-weighted alert generation; colour-coded badges guide analyst prioritisation</td>
+      </tr>
+      <tr>
+        <td><strong>Threat Categories</strong></td>
+        <td>Phishing, Brute Force, Malware, SQL Injection, DDoS — five common attack vectors</td>
+      </tr>
+      <tr>
+        <td><strong>Incident Response Lifecycle</strong></td>
+        <td>Open → Investigating → Contained → Resolved maps to NIST SP 800-61 phases</td>
+      </tr>
+      <tr>
+        <td><strong>Chain of Custody</strong></td>
+        <td>Append-only log with actor, timestamp, and action for every state change</td>
+      </tr>
+      <tr>
+        <td><strong>Evidence Management</strong></td>
+        <td>Named artifact log per incident (pcap, logs, memory dumps)</td>
+      </tr>
+      <tr>
+        <td><strong>False Positive Handling</strong></td>
+        <td>Dedicated action to flag and close benign alerts without escalation</td>
+      </tr>
+      <tr>
+        <td><strong>Severity Classification</strong></td>
+        <td>Four-tier model (Low / Medium / High / Critical) with weighted realistic distribution</td>
+      </tr>
+      <tr>
+        <td><strong>Priority Mapping</strong></td>
+        <td>P1–P4 incident priority automatically derived from alert severity</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>8. Installation &amp; Usage</h2>
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Python 3.10 or later (download from python.org — tick "Add to PATH")</li>
+    <li>pip (bundled with Python)</li>
+  </ul>
+  <h3>Install Dependencies</h3>
+  <pre>pip install streamlit pandas</pre>
+  <h3>Run the Application</h3>
+  <pre>cd "C:\Users\yaksh\OneDrive\Desktop\CYBER SECURITY"
+streamlit run app.py</pre>
+  <p>The browser will open automatically at <code>http://localhost:8501</code>.</p>
+  <h3>Stop the Application</h3>
+  <p>Press <code>Ctrl + C</code> in the terminal.</p>
+
+  
+  <h2>9. Limitations &amp; Future Scope</h2>
+  <h3>Current Limitations</h3>
+  <ul>
+    <li>All data is synthetic and in-memory — restarting the application resets all state.</li>
+    <li>No user authentication or role-based access control.</li>
+    <li>No persistence layer; a database (SQLite, PostgreSQL) would be needed for production use.</li>
+    <li>Charts use Streamlit's native renderer — advanced visualisations would require Plotly or Altair.</li>
+    <li>Single-user; concurrent multi-analyst sessions are not supported.</li>
+  </ul>
+  <h3>Potential Enhancements</h3>
+  <ul>
+    <li><strong>Real SIEM integration</strong> — connect to Elastic SIEM, Splunk, or Microsoft Sentinel via REST API.</li>
+    <li><strong>Database backend</strong> — persist alerts and incidents to SQLite or PostgreSQL.</li>
+    <li><strong>Authentication</strong> — add <code>streamlit-authenticator</code> for login &amp; role management.</li>
+    <li><strong>Email / Slack notifications</strong> — alert on Critical severity events in real time.</li>
+    <li><strong>Threat intelligence enrichment</strong> — integrate VirusTotal or AbuseIPDB for IP lookups.</li>
+    <li><strong>PDF report export</strong> — replace plain-text with formatted PDF using ReportLab.</li>
+    <li><strong>MITRE ATT&amp;CK mapping</strong> — tag each alert type to a MITRE tactic/technique.</li>
+  </ul>
+
+  
+  <h2>10. Conclusion</h2>
+  <p>
+    CyberShield SOC successfully demonstrates the core workflows of a Security Operations Center
+    within a minimal, self-contained Python application. By combining Streamlit's reactive rendering
+    model with in-memory session state, the project delivers a convincing simulation of real-time
+    threat monitoring, analyst triage, incident lifecycle management, and forensic documentation —
+    all without external dependencies beyond two PyPI packages.
+  </p>
+  <p>
+    The project is a practical illustration of how cybersecurity concepts — alert severity
+    classification, incident response phases, chain-of-custody tracking, and evidence management —
+    can be modelled in software. It serves as both a learning tool for aspiring SOC analysts and a
+    functional prototype that could be extended into a production-grade system with the enhancements
+    outlined above.
+  </p>
+
+  
+  <h2>References</h2>
+  <ol>
+    <li>NIST SP 800-61 Rev. 2 — <em>Computer Security Incident Handling Guide</em>, National Institute of Standards and Technology.</li>
+    <li>Streamlit Documentation — <em>streamlit.io/docs</em></li>
+    <li>Pandas Documentation — <em>pandas.pydata.org</em></li>
+    <li>MITRE ATT&amp;CK Framework — <em>attack.mitre.org</em></li>
+    <li>SANS Institute — <em>Incident Handler's Handbook</em></li>
+  </ol>
+
+  <div class="footer">
+    Made with IBM Bob
+  </div>
+
+</div>
+</body>
+</html>
